@@ -11,6 +11,7 @@ from GameState import GameState
 
 # * Import your bot
 from RandomBot import RandomBot
+from LocalJason import JasonBot
 
 size_of_board = 600
 number_of_dots = 4
