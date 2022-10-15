@@ -78,12 +78,6 @@ class BotBrian(Bot):
         
         possible_actions = self.get_all_possible_action(neighbor_state)
 
-        # max = neighbor_value
-        # for action in possible_actions:
-        #     neighbor_value = self.get_heuristic_value(neighbor_state, action)
-        #     if max < neighbor_value:
-        #         max = neighbor_value
-
         for action in possible_actions:
             neighbor_value = max(self.get_heuristic_value(neighbor_state, action), neighbor_value)
 
