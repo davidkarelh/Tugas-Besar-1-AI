@@ -1,4 +1,5 @@
 from array import array
+from copy import deepcopy
 from Bot import Bot
 from GameAction import GameAction
 from GameState import GameState
@@ -43,35 +44,37 @@ class BotBrian(Bot):
         val = 1
         playerModifier = 1
 
-        if state.player1_turn:
+        newState = deepcopy(state)
+
+        if newState.player1_turn:
             playerModifier = -1
 
         if y < (number_of_dots-1) and x < (number_of_dots-1):
-            state.board_status[y][x] = (abs(state.board_status[y][x]) + val) * playerModifier
+            newState.board_status[y][x] = (abs(newState.board_status[y][x]) + val) * playerModifier
 
         if type == 'row':
-            state.row_status[y][x] = 1
+            newState.row_status[y][x] = 1
             if y >= 1:
-                state.board_status[y-1][x] = (abs(state.board_status[y-1][x]) + val) * playerModifier
+                newState.board_status[y-1][x] = (abs(newState.board_status[y-1][x]) + val) * playerModifier
 
         elif type == 'col':
-            state.col_status[y][x] = 1
+            newState.col_status[y][x] = 1
             if x >= 1:
-                state.board_status[y][x-1] = (abs(state.board_status[y][x-1]) + val) * playerModifier
+                newState.board_status[y][x-1] = (abs(newState.board_status[y][x-1]) + val) * playerModifier
 
-        return state
+        return newState
 
-    def count_box(self, state: GameState) -> int:
+    def get_utility_value(self, state: GameState) -> int:
         if state.player1_turn:
-            return np.count_nonzero(state.board_status == -4)
+            return np.count_nonzero(state.board_status == -4) * 4 - np.count_nonzero(abs(state.board_status) == 3)
         else:
-            return np.count_nonzero(state.board_status == 4)
+            return np.count_nonzero(state.board_status == 4) * 4 - np.count_nonzero(abs(state.board_status) == 3)
 
     def get_heuristic_value(self, state: GameState, action: GameAction) -> int:
-        current_value = self.count_box(state)
+        current_value = self.get_utility_value(state)
 
         neighbor_state = self.get_result(state, action)
-        neighbor_value = self.count_box(neighbor_state)
+        neighbor_value = self.get_utility_value(neighbor_state)
 
         if neighbor_value <= current_value:
              return neighbor_value
