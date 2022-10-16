@@ -4,6 +4,7 @@ from Bot import Bot
 from GameAction import GameAction
 from GameState import GameState
 import numpy as np
+import random
 
 number_of_dots = 4
 
@@ -19,6 +20,10 @@ class BotBrian(Bot):
             if max_value < neighbor_value:
                  max_value = neighbor_value
                  actionIdx = i
+            elif max_value == neighbor_value:
+                if random.random() < 0.5:
+                    max_value = neighbor_value
+                    actionIdx = i
 
         return possible_action[actionIdx]
 
