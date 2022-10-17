@@ -1,15 +1,18 @@
-from distutils.archive_util import make_zipfile
-from xmlrpc.client import boolean
 from Bot import Bot
 from GameAction import GameAction
 from GameState import GameState
-import random
 import numpy as np
 from copy import deepcopy
 from typing import Tuple
+from time import time
 
+class TEntry:
+    def __init__(self, value: int, depth: int, type: str):
+        self.value = value
+        self.depth = depth
+        self.type = type
 class KyleBot(Bot):
-    def __init__(self):
+    def __init__(self, max_depth: int = 7, max_second: int = 5):
         self.rows = None
         self.cols = None
         self.turn = None
@@ -22,8 +25,11 @@ class KyleBot(Bot):
         self.playermax_hash = None
         self.playermin_hash = None
         self.change_hash = None
+        self.max_depth = max_depth
+        self.max_second = max_second
 
     def get_action(self, state: GameState) -> GameAction:
+        start_sec = time()
         if self.rows is None:  #Also implies cols is None, which not yet know board size
             self.rows = {
                 "y": state.row_status.shape[0],
@@ -56,8 +62,10 @@ class KyleBot(Bot):
         states = expands[0]
         moves = expands[1]
         max_score = -np.inf
-        n = len(states)
-        for i in range(n):
+        self.n = len(states)
+        each_state_max = (self.max_second / self.n) - (0.0001/self.n)
+        for i in range(self.n):
+            self.max_time = start_sec + each_state_max * (i + 1)
             state = states[i]
             move = moves[i]
             self.zval ^= getattr(self, move.action_type + "_zobrist")[move.position[1]][move.position[0]]
@@ -65,18 +73,15 @@ class KyleBot(Bot):
                 score = self.utility(state[0])
             else:
                 if state[1]:
-                    score = max(max_score, self.alphabeta(state[0], -np.inf, np.inf, True))
+                    score = max(max_score, self.alphabeta(state[0], -np.inf, np.inf, True, 0))
                 else:
-                    self.zval ^= self.playermax_hash
-                    self.zval ^= self.playermin_hash
-                    score = max(max_score, self.alphabeta(state[0], -np.inf, np.inf, False))
-                    self.zval ^= self.playermin_hash
-                    self.zval ^= self.playermax_hash
+                    self.zval ^= self.change
+                    score = max(max_score, self.alphabeta(state[0], -np.inf, np.inf, False, 0))
+                    self.zval ^= self.change
             if score > max_score:
                 max_score = score
                 best_move = moves[i]
             self.zval ^= getattr(self, move.action_type + "_zobrist")[move.position[1]][move.position[0]]
-        print(max_score)
         return best_move
         # Return the move with the highest score
 
@@ -95,27 +100,42 @@ class KyleBot(Bot):
                     self.zval ^= self.col_zobrist[i][j]
         self.zval ^= self.playermax_hash
         
-    def alphabeta(self, state: GameState, alpha: float, beta: float, maximizingplayer: bool) -> GameAction:
+    def alphabeta(self, state: GameState, alpha: float, beta: float, maximizingplayer: bool, depth : int) -> GameAction:
         '''
         Returns the best action for the current player on the board.
         '''
+        alphaorig = alpha
 
         # Cache first
-        hashed = self.ttable.get(self.zval, None)
-        if hashed is not None:
-            val = hashed[0]
-            return val
-        else:
-            base = self.zval
+        cached = self.ttable.get(self.zval, None)
+        if cached is not None and cached.depth >= depth:
+            if cached.type == 'exact':
+                return cached.value
+            elif cached.type == 'lower':
+                alpha = max(alpha, cached.value)
+            else:
+                beta = min(beta, cached.value)
+            
+            if alpha >= beta:
+                return cached.value
 
+        base = self.zval
         # Terminal test
         if self.test_terminal(state):
             return self.utility(state.board_status)
+        
+        if depth >= self.max_depth:
+            if time() >= self.max_time-(0.1/self.n):
+                return self.utility(state.board_status)
+            else:
+                self.max_depth += 1
 
         if maximizingplayer:
             value = -np.inf
             actions, moves = self.get_actions_moves(state, maximizingplayer)
             for i in range(len(actions)):
+                if time() > self.max_time:
+                    return value
                 move = moves[i]
                 action = actions[i]
                 new_state = action[0]
@@ -124,22 +144,23 @@ class KyleBot(Bot):
                 if claimed:
                     z = self.captured_zval(move, new_state)
                     self.zval ^= z
-                    value = max(value, self.alphabeta(new_state, alpha, beta, maximizingplayer))
+                    value = max(value, self.alphabeta(new_state, alpha, beta, maximizingplayer, depth+1))
                     
                 else:
                     self.zval ^= self.change
-                    value = max(value, self.alphabeta(new_state, alpha, beta, not maximizingplayer))
+                    value = max(value, self.alphabeta(new_state, alpha, beta, not maximizingplayer, depth+1))
                     self.zval ^= self.change
                 alpha = max(alpha, value)
                 self.zval ^= getattr(self, move.action_type + "_zobrist")[move.position[1]][move.position[0]]
                 if alpha >= beta:
                     break
-            self.ttable[base] = (value, state, maximizingplayer)
             return value
         else:
             value = np.inf
             actions, moves = self.get_actions_moves(state, maximizingplayer)
             for i in range(len(actions)):
+                if time() > self.max_time:
+                    return value
                 move = moves[i]
                 self.zval ^= getattr(self, move.action_type + "_zobrist")[move.position[1]][move.position[0]]
                 action = actions[i]
@@ -148,17 +169,22 @@ class KyleBot(Bot):
                 if claimed:
                     z = self.captured_zval(move, new_state)
                     self.zval ^= z
-                    value = min(value, self.alphabeta(new_state, alpha, beta, maximizingplayer))
+                    value = min(value, self.alphabeta(new_state, alpha, beta, maximizingplayer, depth+1))
                     self.zval ^= z
                 else:
                     self.zval ^= self.change
-                    value = min(value, self.alphabeta(new_state, alpha, beta, not maximizingplayer))
+                    value = min(value, self.alphabeta(new_state, alpha, beta, not maximizingplayer, depth+1))
                     self.zval ^= self.change
                 beta = min(beta, value)
                 self.zval ^= getattr(self, move.action_type + "_zobrist")[move.position[1]][move.position[0]]
                 if beta <= alpha:
                     break
-            self.ttable[base] = (value, state, maximizingplayer)
+            if value <= alphaorig:
+                self.ttable[base] = TEntry(value, depth, "upper")
+            elif value >= beta:
+                self.ttable[base] = TEntry(value, depth, "lower")
+            else:
+                self.ttable[base] = TEntry(value, depth, "exact")
             return value
     
     def get_actions_moves(self, state: GameState, maximizing) -> Tuple[list[Tuple[GameState,bool]], list[GameAction]]:
