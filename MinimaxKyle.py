@@ -145,6 +145,7 @@ class KyleBot(Bot):
                     z = self.captured_zval(move, new_state)
                     self.zval ^= z
                     value = max(value, self.alphabeta(new_state, alpha, beta, maximizingplayer, depth+1))
+                    self.zval ^= z
                     
                 else:
                     self.zval ^= self.change
