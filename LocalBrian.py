@@ -8,7 +8,7 @@ import random
 
 number_of_dots = 4
 
-class BotBrian(Bot):
+class LocalBrianBot(Bot):
 
     def get_action(self, state: GameState) -> GameAction:
         possible_action = self.get_all_possible_action(state)
