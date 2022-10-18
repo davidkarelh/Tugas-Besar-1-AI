@@ -243,7 +243,7 @@ class MinimaxDavidBot(Bot):
         row_or_columns, indexes = self.__get_best_moves(state)
         
         if (maximizing):
-            score = -10
+            score = -math.inf
             
             for i, idx in enumerate(indexes):
                 line_type = "row" if row_or_columns[i] == 0 else "col"
@@ -271,7 +271,7 @@ class MinimaxDavidBot(Bot):
             return score
 
         else:
-            score = 10
+            score = math.inf
             for i, idx in enumerate(indexes):
                 line_type = "row" if row_or_columns[i] == 0 else "col"
                 temp = 0
