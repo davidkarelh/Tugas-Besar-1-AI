@@ -750,7 +750,7 @@ class MinimaxDavidBot(Bot):
                     elif line_type == 1:
                         idx_next_move = idx_line[0] * 4 + idx_line[1]
                         indexes.append(idx_next_move)
-                    return True
+                return True
             else:
                 return False
         else:
