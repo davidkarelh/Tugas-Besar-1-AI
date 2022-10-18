@@ -8,7 +8,7 @@ import numpy as np
 
 number_of_dots = 4
 
-class JasonBot(Bot):
+class LocalJasonBot(Bot):
     def get_action(self, state: GameState) -> GameAction:
         possible_actions = self.get_all_possible_action(state)
 

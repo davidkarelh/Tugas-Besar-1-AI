@@ -11,7 +11,7 @@ class TEntry:
         self.value = value
         self.depth = depth
         self.type = type
-class KyleBot(Bot):
+class MinimaxKyleBot(Bot):
     def __init__(self, max_depth: int = 7, max_second: int = 5):
         self.rows = None
         self.cols = None

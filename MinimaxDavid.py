@@ -221,7 +221,7 @@ class MinimaxDavidBot(Bot):
         self.number_of_nodes += 1
 
         playerModifier = -1 if state.player1_turn else 1
-        number_of_nodes_limit = 20000
+        number_of_nodes_limit = 50000
 
         hash_state_result = self.__hash_state(state)
         exist, transposition_table_result = self.__check_exist_in_transposition_table(state)
