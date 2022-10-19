@@ -81,16 +81,3 @@ class LocalJasonBot(Bot):
                 current_value = neighbor_value
         
         return current_value
-
-        # neighbor_state = self.get_result(state, action)
-        # neighbor_value = self.get_utility_value(neighbor_state)
-    
-        # if neighbor_value <= current_value:
-        #     return neighbor_value
-        
-        # possible_actions = self.get_all_possible_action(neighbor_state)
-
-        # for action in possible_actions:
-        #     neighbor_value = max(self.get_heuristic_value(neighbor_state, action), neighbor_value)
-
-        # return neighbor_value
